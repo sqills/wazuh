@@ -1,6 +1,8 @@
 # Copyright (C) 2015-2019, Wazuh Inc.
 # Created by Wazuh, Inc. <info@wazuh.com>.
 # This program is a free software; you can redistribute it and/or modify it under the terms of GPLv2
+
+from datetime import datetime
 from wazuh.utils import execute, previous_month, cut_array, sort_array, search_array, tail
 from wazuh.exception import WazuhException
 from wazuh.utils import load_wazuh_xml
@@ -9,8 +11,17 @@ from datetime import datetime
 import time
 from os.path import exists, join
 from glob import glob
-import re
 import hashlib
+import re
+import socket
+import struct
+import subprocess
+from os.path import exists
+import time
+
+from wazuh import common
+from wazuh.exception import WazuhException
+from wazuh.utils import execute, previous_month, cut_array, sort_array, search_array, tail
 from xml.dom.minidom import parseString
 from xml.parsers.expat import ExpatError
 from shutil import move, Error
@@ -307,3 +318,66 @@ def get_file(path):
         raise WazuhException(1000)
 
     return output
+
+
+def restart_master():
+    """
+    Restart Wazuh manager.
+
+    :return: Confirmation message.
+    """
+    try:
+        # initialize socket
+        socket_path = common.EXECQ
+        conn = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        conn.connect(socket_path)
+        # send msg to socket
+        #msg = 'restart-ossec0 ossec-monitord -'
+        msg = 'api-restart-ossec '
+        conn.send(msg.encode())
+        return "Manager was restarted successfully"
+    except Exception as e:
+        raise WazuhException(2008)
+
+
+def restart_node(node_id):
+    """
+    Restart a cluster node.
+
+    :param node_id: Name of the node to restart
+    :return: Confirmation message.
+    """
+    pass
+
+
+def restart_cluster():
+    """
+    Restart Wazuh manager.
+
+    :return: Confirmation message.
+    """
+    pass
+
+
+def _check_wazuh_xml(files):
+    """
+    Check Wazuh XML format from a list of files.
+
+    :param files: List of files to check.
+    :return: None
+    """
+    for f in files:
+        try:
+            subprocess.check_output(['{}/bin/verify-agent-conf'.format(common.ossec_path), '-f', f],
+                                    stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            # extract error message from output.
+            # Example of raw output
+            # 2019/01/08 14:51:09 verify-agent-conf: ERROR: (1230): Invalid element in the configuration: 'agent_conf'.\n2019/01/08 14:51:09 verify-agent-conf: ERROR: (1207): Syscheck remote configuration in '/var/ossec/tmp/api_tmp_file_2019-01-08-01-1546959069.xml' is corrupted.\n\n
+            # Example of desired output:
+            # Invalid element in the configuration: 'agent_conf'. Syscheck remote configuration in '/var/ossec/tmp/api_tmp_file_2019-01-08-01-1546959069.xml' is corrupted.
+            output_regex = re.findall(pattern=r"\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} verify-agent-conf: ERROR: "
+                                                r"\(\d+\): ([\w \/ \_ \- \. ' :]+)", string=e.output.decode())
+            raise WazuhException(1114, ' '.join(output_regex))
+        except Exception as e:
+            raise WazuhException(1743, str(e))

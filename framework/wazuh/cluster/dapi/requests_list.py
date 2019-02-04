@@ -285,6 +285,10 @@ functions = {
         'type': 'local_any',
         'is_async': False
     },
+    'PUT/manager/restart': {
+        'function': manager.restart_master,
+        'type': 'local_any'
+    },
 
     # Cluster
     '/cluster/status': {
@@ -366,6 +370,14 @@ functions = {
         'function': manager.ossec_log,
         'type': 'distributed_master',
         'is_async': False
+    },
+    'PUT/cluster/restart': {
+        'function': manager.restart_cluster,
+        'type': 'distributed_master'
+    },
+    'PUT/cluster/:node_id/restart': {
+        'function': manager.restart_node,
+        'type': 'distributed_master'
     },
 
     # Rootcheck
