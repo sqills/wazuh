@@ -373,11 +373,23 @@ functions = {
     },
     'PUT/cluster/restart': {
         'function': manager.restart_cluster,
-        'type': 'distributed_master'
+        'type': 'distributed_master',
+        'is_async': False
     },
     'PUT/cluster/:node_id/restart': {
         'function': manager.restart_node,
-        'type': 'distributed_master'
+        'type': 'distributed_master',
+        'is_async': False
+    },
+    '/cluster/:node_id/files': {
+        'function': manager.get_file,
+        'type': 'distributed_master',
+        'is_async': False
+    },
+    'POST/cluster/:node_id/files': {
+        'function': manager.upload_file,
+        'type': 'distributed_master',
+        'is_async': False
     },
 
     # Rootcheck
