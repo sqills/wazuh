@@ -65,15 +65,10 @@ class WazuhDBQueryPM(WazuhDBQuery):
                               date_fields={'pm_end_scan', 'pm_start_scan'})
         self.conn = WazuhDBConnection()
 
-        import pydevd
-        pydevd.settrace('172.17.0.1', port=12345, stdoutToServer=True, stderrToServer=True)
-
     def _default_query(self):
         return self._default_query_str
 
     def _substitute_params(self):
-        print(self.request.items())
-        print(self.query)
         for k, v in self.request.items():
             self.query = self.query.replace(f':{k}', str(v))
 
