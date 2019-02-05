@@ -11,7 +11,7 @@ from itertools import groupby
 from wazuh import common
 from wazuh.agent import Agent
 from wazuh.exception import WazuhException
-from wazuh.utils import WazuhDBQuery
+from wazuh.utils import WazuhDBQuery, WazuhDBQueryDistinct
 from wazuh.wdb import WazuhDBConnection
 
 
@@ -65,10 +65,15 @@ class WazuhDBQueryPM(WazuhDBQuery):
                               date_fields={'pm_end_scan', 'pm_start_scan'})
         self.conn = WazuhDBConnection()
 
+        import pydevd
+        pydevd.settrace('172.17.0.1', port=12345, stdoutToServer=True, stderrToServer=True)
+
     def _default_query(self):
         return self._default_query_str
 
     def _substitute_params(self):
+        print(self.request.items())
+        print(self.query)
         for k, v in self.request.items():
             self.query = self.query.replace(f':{k}', str(v))
 
@@ -86,7 +91,17 @@ class WazuhDBQueryPM(WazuhDBQuery):
                                        )
 
     def _format_data_into_dictionary(self):
-        return self._data
+        return {"totalItems": self.total_items, "items": self._data}
+
+    def _add_limit_to_query(self):
+        if self.limit:
+            if self.limit > common.maximum_database_limit:
+                raise WazuhException(1405, str(self.limit))
+            self.query += ' OFFSET :offset LIMIT :limit '
+            self.request['offset'] = self.offset
+            self.request['limit'] = self.limit
+        elif self.limit == 0: # 0 is not a valid limit
+            raise WazuhException(1406)
 
     def run(self):
 
@@ -144,3 +159,6 @@ def get_pm_checks(name, agent_id=None, q="", offset=0, limit=common.database_lim
         result.append(check_dict)
 
     return result
+
+
+class WazuhDBQueryPMDistinct(WazuhDBQueryDistinct, WazuhDBQueryPM): pass

@@ -2,6 +2,7 @@
 # Created by Wazuh, Inc. <info@wazuh.com>.
 # This program is a free software; you can redistribute it and/or modify it under the terms of GPLv2
 import wazuh.active_response as active_response
+import wazuh.cdb_list as cdb_list
 import wazuh.ciscat as ciscat
 import wazuh.cluster.cluster as cluster
 import wazuh.cluster.control as cluster_control
@@ -12,7 +13,6 @@ import wazuh.rootcheck as rootcheck
 import wazuh.stats as stats
 import wazuh.syscheck as syscheck
 import wazuh.syscollector as syscollector
-import wazuh.ciscat as ciscat
 from wazuh import Wazuh
 from wazuh import common
 from wazuh.agent import Agent
