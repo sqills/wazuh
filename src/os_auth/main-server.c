@@ -986,25 +986,27 @@ void* run_dispatcher(__attribute__((unused)) void *arg) {
 
             /* Check for duplicated IP */
 
-            if (config.flags.use_source_ip || use_client_ip) {
-                if (index = OS_IsAllowedIP(&keys, srcip), index >= 0) {
-                    if (config.flags.force_insert && (antiquity = OS_AgentAntiquity(keys.keyentries[index]->name, keys.keyentries[index]->ip->ip), antiquity >= config.force_time || antiquity < 0)) {
-                        id_exist = keys.keyentries[index]->id;
-                        minfo("Duplicated IP '%s' (%s). Saving backup.", srcip, id_exist);
-                        OS_RemoveAgentGroup(id_exist);
-                        add_backup(keys.keyentries[index]);
-                        OS_DeleteKey(&keys, id_exist, 0);
-                    } else {
-                        w_mutex_unlock(&mutex_keys);
-                        merror("Duplicated IP %s", srcip);
-                        snprintf(response, 2048, "ERROR: Duplicated IP: %s\n\n", srcip);
-                        SSL_write(ssl, response, strlen(response));
-                        snprintf(response, 2048, "ERROR: Unable to add agent.\n\n");
-                        SSL_write(ssl, response, strlen(response));
-                        SSL_free(ssl);
-                        close(client.socket);
-                        free(buf);
-                        continue;
+            if (strcmp(srcip, "any") != 0) {
+                if (config.flags.use_source_ip || use_client_ip) {
+                    if (index = OS_IsAllowedIP(&keys, srcip), index >= 0) {
+                        if (config.flags.force_insert && (antiquity = OS_AgentAntiquity(keys.keyentries[index]->name, keys.keyentries[index]->ip->ip), antiquity >= config.force_time || antiquity < 0)) {
+                            id_exist = keys.keyentries[index]->id;
+                            minfo("Duplicated IP '%s' (%s). Saving backup.", srcip, id_exist);
+                            OS_RemoveAgentGroup(id_exist);
+                            add_backup(keys.keyentries[index]);
+                            OS_DeleteKey(&keys, id_exist, 0);
+                        } else {
+                            w_mutex_unlock(&mutex_keys);
+                            merror("Duplicated IP %s", srcip);
+                            snprintf(response, 2048, "ERROR: Duplicated IP: %s\n\n", srcip);
+                            SSL_write(ssl, response, strlen(response));
+                            snprintf(response, 2048, "ERROR: Unable to add agent.\n\n");
+                            SSL_write(ssl, response, strlen(response));
+                            SSL_free(ssl);
+                            close(client.socket);
+                            free(buf);
+                            continue;
+                        }
                     }
                 }
             }
